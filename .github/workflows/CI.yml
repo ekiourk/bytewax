@@ -216,8 +216,50 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-windows
+          name: wheels-windows-x86_64
           path: dist
+
+  # The main `linux` job builds and tests on Python 3.13. With abi3 the same
+  # wheel is meant to load on 3.10–3.12, but nothing exercises that contract
+  # without this job. Downloads the linux x86_64 artifact and runs a tiny
+  # end-to-end dataflow on each older Python.
+  test-abi3:
+    name: Verify abi3 wheel on Python ${{ matrix.python-version }}
+    needs: linux
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheels-linux-x86_64
+          path: dist
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: astral-sh/setup-uv@v8
+      - name: Install wheel and run smoke test
+        shell: bash
+        run: |
+          uv venv -p ${{ matrix.python-version }} venv
+          . venv/bin/activate
+          uv pip install ./dist/*.whl
+          python - <<'PY'
+          import sys
+          import bytewax.operators as op
+          from bytewax.dataflow import Dataflow
+          from bytewax.testing import TestingSink, TestingSource, run_main
+
+          flow = Dataflow("abi3-smoke")
+          inp = op.input("in", flow, TestingSource([1, 2, 3]))
+          doubled = op.map("double", inp, lambda x: x * 2)
+          out: list[int] = []
+          op.output("out", doubled, TestingSink(out))
+          run_main(flow)
+          assert out == [2, 4, 6], out
+          print(f"abi3 smoke ok on python {sys.version_info[:2]}")
+          PY
 
   upload:
     name: Store wheels in S3
