@@ -45,8 +45,9 @@ jobs:
       - name: Check the Version and Quantity of Wheel files
         env:
           NEEDED_VERSION: ${{steps.get-info.outputs.bytewax-version}}
-          # 4 Python versions × (3 linux targets + 2 macos targets + 1 windows) = 24
-          WHEELS: 24
+          # abi3-py310: one wheel per platform/arch covers all supported Python
+          # versions. 3 linux targets + 2 macos targets + 1 windows = 6
+          WHEELS: 6
         run: |
           cat << EOF > ./check_versions.sh
           #!/bin/bash

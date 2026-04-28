@@ -23,8 +23,13 @@ static PICKLE_MODULE: GILOnceCell<Py<PyModule>> = GILOnceCell::new();
 /// extend it with traits that Timely needs. See
 /// <https://github.com/Ixrec/rust-orphan-rules> for why we need a
 /// newtype and what they are.
-#[derive(Clone)]
 pub(crate) struct TdPyAny(PyObject);
+
+impl Clone for TdPyAny {
+    fn clone(&self) -> Self {
+        Python::with_gil(|py| Self(self.0.clone_ref(py)))
+    }
+}
 
 impl TdPyAny {
     pub(crate) fn bind<'py>(&self, py: Python<'py>) -> &Bound<'py, PyAny> {

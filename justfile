@@ -44,11 +44,11 @@ _assert-venv:
 develop: _assert-venv && stubgen
     @# You never need to run with `-E` / `--extras`; the `dev` and test
     @# virtualenvs already have the optional dependencies pinned.
-    PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 maturin develop
+    maturin develop
 
-# Build a release wheel for the current Python version and put it in `dist/`
+# Build a release abi3 wheel (one wheel covers Python 3.10+) and put it in `dist/`
 build: _assert-venv
-    PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 RUSTFLAGS="-C force-frame-pointers=yes" maturin build --release -o dist/
+    RUSTFLAGS="-C force-frame-pointers=yes" maturin build --release -o dist/
 
 # Re-generate stub file of PyO3 parts of the library; automatically runs as part of `just develop`
 stubgen: _assert-venv
@@ -120,7 +120,7 @@ venv-init-build:
 
 # Sync the given venv; e.g. `dev` or `build-py3.10`
 venv-sync venv:
-    PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 VIRTUAL_ENV={{justfile_directory()}}/venvs/{{venv}} uv pip sync --strict requirements/{{venv}}.txt
+    VIRTUAL_ENV={{justfile_directory()}}/venvs/{{venv}} uv pip sync --strict requirements/{{venv}}.txt
 
 # Sync all venvs
 venv-sync-all: (venv-sync "doc") (venv-sync "build-py3.10") (venv-sync "build-py3.11") (venv-sync "build-py3.12") (venv-sync "build-py3.13") (venv-sync "dev")
