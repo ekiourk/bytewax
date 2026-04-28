@@ -9,6 +9,17 @@ For help with updating to new Bytewax versions, please see the
 __Add any extra change notes here and we'll put them in the release
 notes on GitHub when we make a new release.__
 
+- **Breaking:** Dropped Python 3.8 and 3.9 support. The minimum
+  supported Python version is now 3.10.
+
+- Added Python 3.13 support.
+
+- Wheels are now built with the CPython stable ABI (`abi3-py310`);
+  one wheel per platform/arch covers every supported Python version.
+  The wheel filename changes from `cp3X-cp3X-*.whl` to
+  `cp310-abi3-*.whl`. Downstream packagers may need to update tooling
+  that pattern-matches on wheel names.
+
 ## v0.21.1
 
 - `join_window` operator now supports using stream-order via the
