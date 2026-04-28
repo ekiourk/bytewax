@@ -111,7 +111,8 @@ def pairwise(ib):
     # https://docs.python.org/3/library/itertools.html?highlight=pairwise#itertools.pairwise
     a, b = itertools.tee(ib)
     next(b, None)
-    return zip(a, b)
+    # `b` is intentionally one shorter than `a`, so truncate-to-shorter.
+    return zip(a, b, strict=False)
 
 
 class _DynamicMetronomePartition(StatelessSourcePartition[Tuple[datetime, int]]):

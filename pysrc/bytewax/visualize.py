@@ -228,7 +228,9 @@ def _to_plantuml_step(
         inner_lines.append(f"portout {port.port_id}")
 
     for port in step.inp_ports:
-        for from_port_id, stream_id in zip(port.from_port_ids, port.from_stream_ids):
+        for from_port_id, stream_id in zip(
+            port.from_port_ids, port.from_stream_ids, strict=True
+        ):
             inner_lines.append(f"{from_port_id} --> {port.port_id} : {stream_id}")
 
     if recursive:
@@ -239,7 +241,7 @@ def _to_plantuml_step(
         # outputs.
         for port in step.out_ports:
             for from_port_id, stream_id in zip(
-                port.from_port_ids, port.from_stream_ids
+                port.from_port_ids, port.from_stream_ids, strict=True
             ):
                 inner_lines.append(f"{from_port_id} --> {port.port_id} : {stream_id}")
 

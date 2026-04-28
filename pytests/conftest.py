@@ -4,8 +4,10 @@ This sets up our fixtures and logging.
 
 """
 
+import os
 from datetime import datetime, timezone
 
+import pytest
 from bytewax.recovery import RecoveryConfig, init_db_dir
 from bytewax.testing import cluster_main, run_main
 from bytewax.tracing import setup_tracing
@@ -20,16 +22,13 @@ def kafka_server():
     used instead of starting a container.
 
     """
-    import os
-
-    import pytest
-
     if "TEST_KAFKA_BROKER" in os.environ:
         yield os.environ["TEST_KAFKA_BROKER"]
     else:
+        # Deferred imports so the suite still runs without `testcontainers`.
         try:
-            from testcontainers.core.exceptions import DockerException
-            from testcontainers.kafka import KafkaContainer
+            from testcontainers.core.exceptions import DockerException  # noqa: PLC0415
+            from testcontainers.kafka import KafkaContainer  # noqa: PLC0415
         except ImportError:
             pytest.skip("`testcontainers` not installed; skip Kafka tests")
 

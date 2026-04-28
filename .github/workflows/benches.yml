@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: "3.13"
       - name: Install uv
-        run: python3 -m pip install uv
+        uses: astral-sh/setup-uv@v8
       - uses: mkroening/rust-toolchain-toml@main
       - uses: extractions/setup-just@v2
       - name: Prep build venv
