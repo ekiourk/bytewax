@@ -30,7 +30,9 @@ extras = [
 kafka = [
     "requests>=2.0",
     "fastavro>=1.9.5",
-    "confluent-kafka>=2.0.2",
+    # `[schemaregistry]` pulls in httpx etc. — confluent-kafka split these out
+    # of the base wheel, and our docs use `confluent_kafka.schema_registry.*`.
+    "confluent-kafka[schemaregistry]>=2.5",
 ]
 
 [project.urls]
