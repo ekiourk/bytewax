@@ -16,27 +16,35 @@ from pytest import fixture
 
 @fixture(scope="session")
 def kafka_server():
-    """Start a Kafka container using testcontainers if no broker is provided.
+    """Provide a Kafka broker URL.
 
-    If the `TEST_KAFKA_BROKER` environment variable is set, it will be
-    used instead of starting a container.
+    If `TEST_KAFKA_BROKER` is set to a non-empty value, use it. Otherwise
+    fall back to spinning up a local container via `testcontainers` for
+    local development. In CI we always require an explicit broker — the
+    container fallback pulls a ~600MB image and frequently hangs on
+    runners — so without one, the tests skip.
 
     """
-    if "TEST_KAFKA_BROKER" in os.environ:
-        yield os.environ["TEST_KAFKA_BROKER"]
-    else:
-        # Deferred imports so the suite still runs without `testcontainers`.
-        try:
-            from testcontainers.core.exceptions import DockerException  # noqa: PLC0415
-            from testcontainers.kafka import KafkaContainer  # noqa: PLC0415
-        except ImportError:
-            pytest.skip("`testcontainers` not installed; skip Kafka tests")
+    broker = os.environ.get("TEST_KAFKA_BROKER", "").strip()
+    if broker:
+        yield broker
+        return
 
-        try:
-            with KafkaContainer("confluentinc/cp-kafka:7.6.0") as kafka:
-                yield kafka.get_bootstrap_server()
-        except (DockerException, Exception) as e:
-            pytest.skip(f"Docker not available or Testcontainers failed: {e}")
+    if os.environ.get("CI") == "true":
+        pytest.skip("TEST_KAFKA_BROKER not set in CI; skipping Kafka tests")
+
+    # Local dev: try testcontainers.
+    try:
+        from testcontainers.core.exceptions import DockerException  # noqa: PLC0415
+        from testcontainers.kafka import KafkaContainer  # noqa: PLC0415
+    except ImportError:
+        pytest.skip("`testcontainers` not installed; skip Kafka tests")
+
+    try:
+        with KafkaContainer("confluentinc/cp-kafka:7.6.0") as kafka:
+            yield kafka.get_bootstrap_server()
+    except DockerException as e:
+        pytest.skip(f"Docker not available: {e}")
 
 
 @fixture(params=["run_main", "cluster_main-1thread", "cluster_main-2thread"])
