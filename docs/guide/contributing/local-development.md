@@ -24,7 +24,7 @@ installation
 instructions](https://github.com/casey/just?tab=readme-ov-file#installation).
 There's probably a package for your OS already.
 
-### Install `pyenv` and Python 3.12
+### Install `pyenv` and Python 3.13
 
 We want Bytewax to run under many different versions of the Python
 interpreter, so we need a quick way to create virtualenvs in different

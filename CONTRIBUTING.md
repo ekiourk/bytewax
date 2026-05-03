@@ -67,9 +67,8 @@ Important Labels:
 
 ### Fork and Clone
 
-[Fork the canonical Bytewax
-repository](https://github.com/bytewax/bytewax/fork). Then clone your
-fork to your local machine.
+[Fork this repository](https://github.com/ekiourk/bytewax/fork). Then
+clone your fork to your local machine.
 
 ### Setup Development Environment
 
