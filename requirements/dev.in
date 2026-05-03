@@ -6,8 +6,6 @@ ipython
 mypy
 pip  # Remove once we have a version of maturin with --uv.
 pre-commit
-pytest-cov
-pytest-timeout
 ruff
 sphinx-autobuild
 types-docutils
