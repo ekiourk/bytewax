@@ -3,5 +3,7 @@ maturin
 pytest
 pytest-benchmark
 pytest-codspeed
+pytest-cov
+pytest-timeout
 testcontainers[kafka]
 types-requests

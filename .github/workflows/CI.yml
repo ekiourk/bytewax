@@ -116,7 +116,15 @@ jobs:
           . venv/bin/activate
           WHEEL_FILE=$(ls ./dist/*.whl)
           uv pip install -v --no-deps $WHEEL_FILE
-          just test-py
+          # `pytest-cov` plus `--cov-report=xml` produces a coverage.xml
+          # for the upload step below; the terminal report shows in CI logs.
+          pytest --benchmark-skip --cov --cov-report=term --cov-report=xml pytests/
+      - name: Upload coverage report
+        if: ${{ matrix.target == 'x86_64' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-linux-x86_64
+          path: coverage.xml
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:

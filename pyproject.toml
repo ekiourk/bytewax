@@ -55,6 +55,28 @@ python-source = "pysrc"
 
 [tool.pytest.ini_options]
 addopts = "-v"
+# Hard cap on per-test runtime so a hung fixture (e.g. testcontainers,
+# external service) doesn't burn CI for hours. Tests that legitimately
+# need more time can override with `@pytest.mark.timeout(N)`.
+timeout = 60
+
+[tool.coverage.run]
+source = ["pysrc/bytewax"]
+branch = true
+# `_bytewax` is the Rust extension; coverage doesn't apply.
+omit = ["pysrc/bytewax/_bytewax.pyi"]
+
+[tool.coverage.report]
+# Show lines not exercised by any test.
+show_missing = true
+# Don't count idiomatic-but-uncoverable lines as misses.
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+    "@(abc\\.)?abstractmethod",
+]
 
 [tool.mypy]
 # TODO: Turn this on to typecheck all tests.
