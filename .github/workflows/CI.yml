@@ -230,6 +230,10 @@ jobs:
     name: Verify abi3 wheel on Python ${{ matrix.python-version }}
     needs: linux
     runs-on: ubuntu-22.04
+    # Disabled on this experimental branch: with `abi3-py310` removed from
+    # `Cargo.toml`, the wheel is now `cp310-cp310` and only loads on
+    # Python 3.10. Cross-version smoke testing isn't applicable here.
+    if: false
     strategy:
       matrix:
         python-version: ['3.11', '3.12', '3.13']
