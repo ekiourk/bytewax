@@ -61,10 +61,29 @@ addopts = "-v"
 timeout = 60
 
 [tool.coverage.run]
-source = ["pysrc/bytewax"]
+# Track by package name rather than by source directory: locally we use
+# `maturin develop` (editable install, files at `pysrc/bytewax/`) but
+# in CI we install the built wheel which lands in
+# `venv/lib/.../site-packages/bytewax/`. `source_pkgs` measures the
+# package wherever it was imported from; the `[tool.coverage.paths]`
+# block below canonicalizes the two locations to the same repo path.
+source_pkgs = ["bytewax"]
 branch = true
+# Record paths relative to the repo root rather than absolute, so the
+# generated coverage.xml has paths Codecov can match against the repo
+# tree.
+relative_files = true
 # `_bytewax` is the Rust extension; coverage doesn't apply.
 omit = ["pysrc/bytewax/_bytewax.pyi"]
+
+[tool.coverage.paths]
+# Collapse the editable-install path and the wheel-install path to
+# the canonical source path.
+source = [
+    "pysrc/bytewax",
+    "*/lib/python*/site-packages/bytewax",
+    "*/site-packages/bytewax",
+]
 
 [tool.coverage.report]
 # Show lines not exercised by any test.
