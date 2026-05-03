@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Tuple
 
 from bytewax._bytewax import cli_main
+from bytewax.dataflow import Dataflow
 from bytewax.recovery import RecoveryConfig
 
 __all__ = [
@@ -36,8 +37,6 @@ def _locate_dataflow(module_name, dataflow_name):
 
     This is adapted from Flask's codebase.
     """
-    from bytewax.dataflow import Dataflow
-
     try:
         __import__(module_name)
     except ImportError as ex:

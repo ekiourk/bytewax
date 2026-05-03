@@ -1,6 +1,9 @@
 myst-parser
 pydata-sphinx-theme
-sphinx
+# Sphinx 8+ tightened `note_dependency` argument types and rejects the
+# tuple `file_path` that the pinned `sphinx-autodoc2` fork passes for
+# namespace packages. Pinned to <8 until the fork is updated.
+sphinx<8
 sphinx-autodoc2 @ https://github.com/davidselassie/sphinx-autodoc2/archive/namespace-packages.zip
 sphinx-favicon
 sphinx-substitution-extensions

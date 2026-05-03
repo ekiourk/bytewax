@@ -104,8 +104,13 @@ create_exception!(
 );
 
 /// Represents a `bytewax.inputs.Source` from Python.
-#[derive(Clone)]
 pub(crate) struct Source(Py<PyAny>);
+
+impl Clone for Source {
+    fn clone(&self) -> Self {
+        Python::with_gil(|py| Self(self.0.clone_ref(py)))
+    }
+}
 
 /// Do some eager type checking.
 impl<'py> FromPyObject<'py> for Source {
@@ -144,8 +149,13 @@ impl Source {
 }
 
 /// Represents a `bytewax.inputs.FixedPartitionedSource` from Python.
-#[derive(Clone)]
 pub(crate) struct FixedPartitionedSource(Py<PyAny>);
+
+impl Clone for FixedPartitionedSource {
+    fn clone(&self) -> Self {
+        Python::with_gil(|py| Self(self.0.clone_ref(py)))
+    }
+}
 
 /// Do some eager type checking.
 impl<'py> FromPyObject<'py> for FixedPartitionedSource {
@@ -629,8 +639,13 @@ impl Drop for StatefulPartition {
 }
 
 /// Represents a `bytewax.inputs.DynamicInput` from Python.
-#[derive(Clone)]
 pub(crate) struct DynamicSource(Py<PyAny>);
+
+impl Clone for DynamicSource {
+    fn clone(&self) -> Self {
+        Python::with_gil(|py| Self(self.0.clone_ref(py)))
+    }
+}
 
 /// Do some eager type checking.
 impl<'py> FromPyObject<'py> for DynamicSource {

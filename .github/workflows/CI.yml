@@ -19,12 +19,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
+        uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: 3.12
+          python-version: '3.13'
       - name: Set up uv
-        run: curl -LsSf https://astral.sh/uv/0.3.5/install.sh | sh
+        uses: astral-sh/setup-uv@v8.1.0
       - uses: extractions/setup-just@v2
       # Need this because we're running `cargo clippy` and `fmt`
       # directly.
@@ -38,7 +38,7 @@ jobs:
       - name: Prep venv
         shell: bash
         run: |
-          uv venv -p 3.12 venv
+          uv venv -p 3.13 venv
           . venv/bin/activate
           uv pip sync --strict requirements/dev.txt
       - name: Check pre-commit hooks
@@ -65,11 +65,10 @@ jobs:
   linux:
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
         target: ['x86_64', 'aarch64', 'armv7']
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/cache@v4
         with:
           path: |
@@ -80,25 +79,29 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: '3.10'
       - name: Set up uv
-        run: curl -LsSf https://astral.sh/uv/0.3.5/install.sh | sh
+        uses: astral-sh/setup-uv@v8.1.0
       - uses: extractions/setup-just@v2
       - name: Prep build venv
         shell: bash
         run: |
-          uv venv -p ${{ matrix.python-version }} venv/
+          uv venv -p 3.10 venv/
           . venv/bin/activate
-          uv pip sync --strict requirements/build-py${{ matrix.python-version }}.txt
+          uv pip sync --strict requirements/build-py3.10.txt
       - name: Build wheel
         uses: PyO3/maturin-action@v1
         env:
           RUSTFLAGS: -C force-frame-pointers=yes
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist/ -i ${{ matrix.python-version }}
+          # Build against the abi3 floor (3.10) so build-time Python cfgs
+          # match the abi3 contract. Building against a newer Python in a
+          # PyO3 0.22.x manylinux environment can leak post-3.10 symbols
+          # (e.g. PyType_GetModuleName via `PyType::module()`).
+          args: --release --out dist/ -i 3.10
           sccache: true
       - name: Run Python tests
         # Only run tests for the host architecture, as aarch64 and
@@ -117,39 +120,39 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-linux-${{ matrix.target }}-${{ matrix.python-version }}
+          name: wheels-linux-${{ matrix.target }}
           path: dist
 
   macos:
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
         target: ['x86_64', 'aarch64']
     runs-on: macos-latest
     env:
-      MACOSX_DEPLOYMENT_TARGET: 10.9
+      MACOSX_DEPLOYMENT_TARGET: '10.13'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: '3.10'
       - name: Set up uv
-        run: curl -LsSf https://astral.sh/uv/0.3.5/install.sh | sh
+        uses: astral-sh/setup-uv@v8.1.0
       - uses: extractions/setup-just@v2
       - name: Prep build venv
         shell: bash
         run: |
-          uv venv -p ${{ matrix.python-version }} venv/
+          uv venv -p 3.10 venv/
           . venv/bin/activate
-          uv pip sync --strict requirements/build-py${{ matrix.python-version }}.txt
+          uv pip sync --strict requirements/build-py3.10.txt
       - name: Build wheel
         uses: PyO3/maturin-action@v1
         env:
           RUSTFLAGS: -C force-frame-pointers=yes
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist/ -i ${{ matrix.python-version }}
+          # Build against the abi3 floor (3.10) — see linux job for context.
+          args: --release --out dist/ -i 3.10
       - name: Run Python tests
         # Only run tests for the host architecture, as x86_64 is
         # cross-compiled on macOS runners.
@@ -167,20 +170,17 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-macos-${{ matrix.target }}-${{ matrix.python-version }}
+          name: wheels-macos-${{ matrix.target }}
           path: dist
 
   windows:
-    strategy:
-      matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
     runs-on: windows-latest
     steps:
       - uses: ilammy/msvc-dev-cmd@v1
       - shell: cmd
         run: |
           set PATH=%PATH%;%wix%bin;"%WindowsSdkVerBinPath%"\x86
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/cache@v4
         with:
           path: |
@@ -191,24 +191,24 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: '3.10'
       - name: Set up uv
-        run: curl -LsSf https://astral.sh/uv/0.3.5/install.sh | sh
+        uses: astral-sh/setup-uv@v8.1.0
       - uses: extractions/setup-just@v2
       - name: Prep build venv
         run: |
-          uv venv -p ${{ matrix.python-version }} venv/
+          uv venv -p 3.10 venv/
           venv/Scripts/activate
-          uv pip sync --strict requirements/build-py${{ matrix.python-version }}.txt
+          uv pip sync --strict requirements/build-py3.10.txt
       - name: Build wheel
         uses: PyO3/maturin-action@v1
         env:
           RUSTFLAGS: -C force-frame-pointers=yes
         with:
-          target: ${{ matrix.target }}
-          args: --release --out dist/ -i ${{ matrix.python-version }}
+          # Build against the abi3 floor (3.10) — see linux job for context.
+          args: --release --out dist/ -i 3.10
           sccache: true
       - name: Run Python tests
         run: |
@@ -219,12 +219,54 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-windows-${{ matrix.target }}-${{ matrix.python-version }}
+          name: wheels-windows-x86_64
           path: dist
+
+  # The main `linux` job builds and tests on Python 3.10 (the abi3 floor).
+  # This job exercises the abi3 contract on every newer supported Python
+  # by downloading the linux x86_64 artifact and running a tiny end-to-end
+  # dataflow.
+  test-abi3:
+    name: Verify abi3 wheel on Python ${{ matrix.python-version }}
+    needs: linux
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheels-linux-x86_64
+          path: dist
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: astral-sh/setup-uv@v8.1.0
+      - name: Install wheel and run smoke test
+        shell: bash
+        run: |
+          uv venv -p ${{ matrix.python-version }} venv
+          . venv/bin/activate
+          uv pip install ./dist/*.whl
+          python - <<'PY'
+          import sys
+          import bytewax.operators as op
+          from bytewax.dataflow import Dataflow
+          from bytewax.testing import TestingSink, TestingSource, run_main
+
+          flow = Dataflow("abi3-smoke")
+          inp = op.input("in", flow, TestingSource([1, 2, 3]))
+          doubled = op.map("double", inp, lambda x: x * 2)
+          out: list[int] = []
+          op.output("out", doubled, TestingSink(out))
+          run_main(flow)
+          assert out == [2, 4, 6], out
+          print(f"abi3 smoke ok on python {sys.version_info[:2]}")
+          PY
 
   upload:
     name: Store wheels in S3
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: "github.ref == 'refs/heads/main'"
     needs: [ linux, macos, windows ]
     steps:
@@ -234,7 +276,7 @@ jobs:
           path: wheels
           merge-multiple: true
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.ECR_ACCESS_KEY }}
           aws-secret-access-key: ${{ secrets.ECR_SECRET_KEY }}

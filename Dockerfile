@@ -1,11 +1,8 @@
-# Builder to get maturin
-FROM konstin2/maturin:v0.12.6 as maturin-builder
+ARG PYTHON_VERSION=3.12
 
-# Builder to get the package
-FROM rust:1.68-slim-bullseye AS build
+FROM rust:1.83-slim-bookworm AS build
 
-COPY --from=maturin-builder /usr/bin/maturin /usr/bin/maturin
-
+ARG PYTHON_VERSION
 ARG BYTEWAX_VERSION
 
 RUN apt-get update && \
@@ -23,16 +20,16 @@ RUN apt-get update && \
         protobuf-compiler \
         python3-venv && \
     python3 -m venv /venv && \
-    /venv/bin/pip install --upgrade pip setuptools wheel
+    /venv/bin/pip install --upgrade pip setuptools wheel maturin
 
 COPY . /bytewax
 WORKDIR /bytewax
 
-RUN maturin build --interpreter python3.9
-RUN /venv/bin/pip3 install /bytewax/target/wheels/bytewax-$BYTEWAX_VERSION-cp39-cp39-manylinux_2_31_x86_64.whl
+RUN /venv/bin/maturin build --release --interpreter python${PYTHON_VERSION}
+RUN /venv/bin/pip3 install /bytewax/target/wheels/bytewax-${BYTEWAX_VERSION}-*.whl
 
 # Final image
-FROM gcr.io/distroless/python3-debian11:debug
+FROM gcr.io/distroless/python3-debian12:debug
 COPY --from=build /venv /venv
 WORKDIR /bytewax
 COPY ./entrypoint.sh .

@@ -9,13 +9,13 @@ get-started:
     @echo 'Checking that you have `uv` installed'
     @echo 'If you need it, I recommend installing `pipx` from https://pipx.pypa.io/stable/ then `pipx install uv`'
     uv --version
-    @echo 'Checking that you have Python 3.12 installed'
-    @echo 'If you need it, I recommend installing `pyenv` from https://github.com/pyenv/pyenv then `pyenv install 3.12`'
-    @echo 'You also might need to activate the global shim with `pyenv global system 3.12`'
-    python3.12 --version
+    @echo 'Checking that you have Python 3.13 installed'
+    @echo 'If you need it, I recommend installing `pyenv` from https://github.com/pyenv/pyenv then `pyenv install 3.13`'
+    @echo 'You also might need to activate the global shim with `pyenv global system 3.13`'
+    python3.13 --version
     @echo 'Creating the development virtual env in `venvs/dev/`'
     mkdir -p venvs
-    test -d venvs/dev/ || uv venv -p 3.12 venvs/dev/
+    test -d venvs/dev/ || uv venv -p 3.13 venvs/dev/
     @echo 'Installing all the tools and dependencies'
     just venv-sync dev
     @echo 'Checking that you have `cbfmt` installed'
@@ -46,7 +46,7 @@ develop: _assert-venv && stubgen
     @# virtualenvs already have the optional dependencies pinned.
     maturin develop
 
-# Build a release wheel for the current Python version and put it in `dist/`
+# Build a release abi3 wheel (one wheel covers Python 3.10+) and put it in `dist/`
 build: _assert-venv
     RUSTFLAGS="-C force-frame-pointers=yes" maturin build --release -o dist/
 
@@ -108,38 +108,36 @@ doc-build: _assert-venv
 # Init the Read the Docs venv; only use if you are debugging RtD; use `just doc-autobuild` to write docs locally
 venv-init-doc:
     mkdir -p venvs
-    test -d venvs/doc/ || uv venv -p 3.12 venvs/doc/
+    test -d venvs/doc/ || uv venv -p 3.13 venvs/doc/
 
-# Init the CI Python build venvs; only use if you are debugging CI build dependencies
+# Init the CI Python build venv; only use if you are debugging CI build dependencies.
+# CI builds against the abi3 floor (3.10) so build-time Python cfgs match the
+# wheel's abi3 contract; older `lib-py3.X.txt` files are kept as a runtime-deps
+# reference for packagers.
 venv-init-build:
     mkdir -p venvs
-    test -d venvs/build-py3.8/ || uv venv -p 3.8 venvs/build-py3.8/
-    test -d venvs/build-py3.9/ || uv venv -p 3.9 venvs/build-py3.9/
     test -d venvs/build-py3.10/ || uv venv -p 3.10 venvs/build-py3.10/
-    test -d venvs/build-py3.11/ || uv venv -p 3.11 venvs/build-py3.11/
-    test -d venvs/build-py3.12/ || uv venv -p 3.12 venvs/build-py3.12/
 
 # Sync the given venv; e.g. `dev` or `build-py3.10`
 venv-sync venv:
     VIRTUAL_ENV={{justfile_directory()}}/venvs/{{venv}} uv pip sync --strict requirements/{{venv}}.txt
 
 # Sync all venvs
-venv-sync-all: (venv-sync "doc") (venv-sync "build-py3.8") (venv-sync "build-py3.9") (venv-sync "build-py3.10") (venv-sync "build-py3.11") (venv-sync "build-py3.12") (venv-sync "dev")
+venv-sync-all: (venv-sync "doc") (venv-sync "build-py3.10") (venv-sync "dev")
 
 # Pin / compile all dependences for reproducible venvs; re-run this if you update any library deps or `.in` files
 venv-compile-all:
-    uv pip compile --generate-hashes -p 3.12 requirements/doc.in -o requirements/doc.txt
+    uv pip compile --generate-hashes -p 3.13 requirements/doc.in -o requirements/doc.txt
 
-    uv pip compile --generate-hashes -p 3.8 --all-extras pyproject.toml -o requirements/lib-py3.8.txt
-    uv pip compile --generate-hashes -p 3.9 --all-extras pyproject.toml -o requirements/lib-py3.9.txt
     uv pip compile --generate-hashes -p 3.10 --all-extras pyproject.toml -o requirements/lib-py3.10.txt
     uv pip compile --generate-hashes -p 3.11 --all-extras pyproject.toml -o requirements/lib-py3.11.txt
     uv pip compile --generate-hashes -p 3.12 --all-extras pyproject.toml -o requirements/lib-py3.12.txt
+    uv pip compile --generate-hashes -p 3.13 --all-extras pyproject.toml -o requirements/lib-py3.13.txt
 
-    uv pip compile --generate-hashes -p 3.8 requirements/build.in requirements/lib-py3.8.txt -o requirements/build-py3.8.txt
-    uv pip compile --generate-hashes -p 3.9 requirements/build.in requirements/lib-py3.9.txt -o requirements/build-py3.9.txt
+    # 3.10 build env is what CI uses for shipped wheels (abi3 floor).
+    # 3.13 build env is used by `benches.yml` only (benchmarks run on the
+    # latest Python; the wheel never leaves that pipeline).
     uv pip compile --generate-hashes -p 3.10 requirements/build.in requirements/lib-py3.10.txt -o requirements/build-py3.10.txt
-    uv pip compile --generate-hashes -p 3.11 requirements/build.in requirements/lib-py3.11.txt -o requirements/build-py3.11.txt
-    uv pip compile --generate-hashes -p 3.12 requirements/build.in requirements/lib-py3.12.txt -o requirements/build-py3.12.txt
+    uv pip compile --generate-hashes -p 3.13 requirements/build.in requirements/lib-py3.13.txt -o requirements/build-py3.13.txt
 
-    uv pip compile --generate-hashes -p 3.12 requirements/dev.in requirements/lib-py3.12.txt -o requirements/dev.txt
+    uv pip compile --generate-hashes -p 3.13 requirements/dev.in requirements/lib-py3.13.txt -o requirements/dev.txt

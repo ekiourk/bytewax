@@ -29,8 +29,13 @@ use crate::unwrap_any;
 use crate::with_timer;
 
 /// Represents a `bytewax.outputs.Sink` from Python.
-#[derive(Clone)]
 pub(crate) struct Sink(Py<PyAny>);
+
+impl Clone for Sink {
+    fn clone(&self) -> Self {
+        Python::with_gil(|py| Self(self.0.clone_ref(py)))
+    }
+}
 
 /// Do some eager type checking.
 impl<'py> FromPyObject<'py> for Sink {
@@ -69,8 +74,13 @@ impl Sink {
 }
 
 /// Represents a `bytewax.outputs.PartitionedOutput` from Python.
-#[derive(Clone)]
 pub(crate) struct FixedPartitionedSink(Py<PyAny>);
+
+impl Clone for FixedPartitionedSink {
+    fn clone(&self) -> Self {
+        Python::with_gil(|py| Self(self.0.clone_ref(py)))
+    }
+}
 
 /// Do some eager type checking.
 impl<'py> FromPyObject<'py> for FixedPartitionedSink {
@@ -411,8 +421,13 @@ where
 }
 
 /// Represents a `bytewax.outputs.DynamicSink` from Python.
-#[derive(Clone)]
 pub(crate) struct DynamicSink(Py<PyAny>);
+
+impl Clone for DynamicSink {
+    fn clone(&self) -> Self {
+        Python::with_gil(|py| Self(self.0.clone_ref(py)))
+    }
+}
 
 /// Do some eager type checking.
 impl<'py> FromPyObject<'py> for DynamicSink {
