@@ -18,11 +18,13 @@ from pytest import fixture
 def kafka_server():
     """Provide a Kafka broker URL.
 
-    If `TEST_KAFKA_BROKER` is set to a non-empty value, use it. Otherwise
-    fall back to spinning up a local container via `testcontainers` for
-    local development. In CI we always require an explicit broker — the
-    container fallback pulls a ~600MB image and frequently hangs on
-    runners — so without one, the tests skip.
+    Resolution order:
+    1. If `TEST_KAFKA_BROKER` is set to a non-empty value, use it as-is.
+    2. Otherwise spin up a Kafka container via `testcontainers` (works
+       both locally and on CI runners that have Docker, e.g. linux GHA).
+    3. If Docker isn't available (e.g. on macOS/Windows GHA runners
+       without Docker, or in environments without the daemon running),
+       skip with a clear reason.
 
     """
     broker = os.environ.get("TEST_KAFKA_BROKER", "").strip()
@@ -30,18 +32,24 @@ def kafka_server():
         yield broker
         return
 
-    if os.environ.get("CI") == "true":
-        pytest.skip("TEST_KAFKA_BROKER not set in CI; skipping Kafka tests")
-
-    # Local dev: try testcontainers.
+    # Deferred imports so the suite still runs without `testcontainers`
+    # or the underlying `docker` library.
     try:
-        from testcontainers.core.exceptions import DockerException  # noqa: PLC0415
+        from docker.errors import DockerException  # noqa: PLC0415
         from testcontainers.kafka import KafkaContainer  # noqa: PLC0415
     except ImportError:
-        pytest.skip("`testcontainers` not installed; skip Kafka tests")
+        pytest.skip("`testcontainers` or `docker` not installed; skip Kafka tests")
 
     try:
-        with KafkaContainer("confluentinc/cp-kafka:7.6.0") as kafka:
+        # Disable auto-topic-creation on the broker: tests that need
+        # topics create them explicitly via AdminClient (see `tmp_topic`),
+        # and `test_input_raises_on_topic_not_exist` relies on the
+        # broker actually rejecting a missing-topic read instead of
+        # silently materializing the topic.
+        kafka_container = KafkaContainer("confluentinc/cp-kafka:7.6.0").with_env(
+            "KAFKA_AUTO_CREATE_TOPICS_ENABLE", "false"
+        )
+        with kafka_container as kafka:
             yield kafka.get_bootstrap_server()
     except DockerException as e:
         pytest.skip(f"Docker not available: {e}")

@@ -91,6 +91,13 @@ exclude_lines = [
 module = "confluent_kafka.*"
 ignore_missing_imports = true
 
+# `docker` (the docker-py SDK, used via testcontainers) doesn't ship
+# type stubs. Used only in `pytests/conftest.py` for catching
+# `DockerException`.
+[[tool.mypy.overrides]]
+module = "docker.*"
+ignore_missing_imports = true
+
 # TODO: pre-existing type debt — `KafkaSourceMessage.topic` is `Optional[str]`
 # but `confluent-kafka>=2.14`'s stubs require non-None for `SerializationContext`.
 # Tighten the connector types (likely change `topic` to `str` and validate at

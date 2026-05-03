@@ -103,6 +103,14 @@ jobs:
           # (e.g. PyType_GetModuleName via `PyType::module()`).
           args: --release --out dist/ -i 3.10
           sccache: true
+      - name: Pre-pull Kafka image
+        # The kafka_server fixture starts a testcontainers Kafka on
+        # demand. Pre-pulling makes the cost observable (separate CI
+        # step) instead of hidden inside the first test that uses it,
+        # and means the per-test pytest-timeout doesn't need to budget
+        # for a ~30-60s image pull.
+        if: ${{ matrix.target == 'x86_64' }}
+        run: docker pull confluentinc/cp-kafka:7.6.0
       - name: Run Python tests
         # Only run tests for the host architecture, as aarch64 and
         # armv7 are cross-compiled on Ubuntu runners.
