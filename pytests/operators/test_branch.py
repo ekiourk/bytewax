@@ -74,11 +74,28 @@ def test_branch_raises_on_non_bool_key():
             run_main(flow)
 
 
+def _busy_identity(x: int) -> int:
+    """CodSpeed calibration: do pointless work per item, return value unchanged.
+
+    Each call runs ~100 Python loop iterations (~5000 bytecode-level
+    instructions). With 100,000 items per benchmark run that's ~5×10^8
+    extra instructions — well above CodSpeed's threshold and easy to spot.
+    Used to verify CodSpeed reliably flags deterministic regressions.
+    Revert before merging.
+    """
+    total = 0
+    for i in range(100):
+        total += i
+    return x
+
+
 def build_branch_dataflow(
     inp: TestingSource, out_evens: List, out_odds: List
 ) -> Dataflow:
     flow = Dataflow("branch")
     s = op.input("inp", flow, inp)
+    # CALIBRATION: redundant identity map that burns CPU per item.
+    s = op.map("calibration_slowdown", s, _busy_identity)
     branch_out = op.branch("evens_and_odds", s, lambda x: x % 2 == 0)
     op.output("out_evens", branch_out.trues, TestingSink(out_evens))
     op.output("out_odds", branch_out.falses, TestingSink(out_odds))
