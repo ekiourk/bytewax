@@ -222,7 +222,10 @@ def deserialize_key(
     ) -> Union[KafkaSourceMessage[object, V], KafkaError[Optional[bytes], V]]:
         try:
             key = deserializer(
-                msg.key, SerializationContext(topic=msg.topic, field=MessageField.KEY)
+                msg.key,
+                SerializationContext(
+                    topic=cast(str, msg.topic), field=MessageField.KEY
+                ),
             )
             return msg._with_key(key)
         except Exception as e:
@@ -256,7 +259,8 @@ def deserialize_value(
     ) -> Union[KafkaSourceMessage[K, object], KafkaError[K, Optional[bytes]]]:
         try:
             value = deserializer(
-                msg.value, ctx=SerializationContext(msg.topic, MessageField.VALUE)
+                msg.value,
+                ctx=SerializationContext(cast(str, msg.topic), MessageField.VALUE),
             )
             return msg._with_value(value)
         except Exception as e:
@@ -306,7 +310,8 @@ def deserialize(
     ]:
         try:
             key = key_deserializer(
-                msg.key, ctx=SerializationContext(msg.topic, MessageField.KEY)
+                msg.key,
+                ctx=SerializationContext(cast(str, msg.topic), MessageField.KEY),
             )
         except Exception as e:
             err = ConfluentKafkaError(ConfluentKafkaError._KEY_DESERIALIZATION, f"{e}")
@@ -314,7 +319,8 @@ def deserialize(
 
         try:
             value = val_deserializer(
-                msg.value, ctx=SerializationContext(msg.topic, MessageField.VALUE)
+                msg.value,
+                ctx=SerializationContext(cast(str, msg.topic), MessageField.VALUE),
             )
         except Exception as e:
             err = ConfluentKafkaError(
@@ -351,7 +357,9 @@ def serialize_key(
     """
 
     def shim_mapper(msg: KafkaSinkMessage[Any, V]) -> KafkaSinkMessage[bytes, V]:
-        key = serializer(msg.key, ctx=SerializationContext(msg.topic, MessageField.KEY))
+        key = serializer(
+            msg.key, ctx=SerializationContext(cast(str, msg.topic), MessageField.KEY)
+        )
         assert key is not None
         return msg._with_key(key)
 
@@ -383,7 +391,8 @@ def serialize_value(
 
     def shim_mapper(msg: KafkaSinkMessage[K, Any]) -> KafkaSinkMessage[K, bytes]:
         value = serializer(
-            msg.value, ctx=SerializationContext(msg.topic, MessageField.VALUE)
+            msg.value,
+            ctx=SerializationContext(cast(str, msg.topic), MessageField.VALUE),
         )
         assert value is not None
         return msg._with_value(value)
@@ -422,11 +431,12 @@ def serialize(
         msg: KafkaSinkMessage[Any, Any],
     ) -> KafkaSinkMessage[bytes, bytes]:
         key = key_serializer(
-            msg.key, ctx=SerializationContext(msg.topic, MessageField.KEY)
+            msg.key, ctx=SerializationContext(cast(str, msg.topic), MessageField.KEY)
         )
         assert key is not None
         value = val_serializer(
-            msg.value, ctx=SerializationContext(msg.topic, MessageField.VALUE)
+            msg.value,
+            ctx=SerializationContext(cast(str, msg.topic), MessageField.VALUE),
         )
         assert value is not None
         return msg._with_key_and_value(key, value)

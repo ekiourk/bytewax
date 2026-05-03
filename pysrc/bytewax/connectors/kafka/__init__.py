@@ -57,11 +57,19 @@ K = TypeVar("K")
 V = TypeVar("V")
 """Type of value in a Kafka message."""
 
+# Covariant key/value type vars for `KafkaSinkMessage`. Sink messages are
+# `frozen=True` dataclasses so they're effectively read-only after
+# construction, which makes covariance the right semantic for callers
+# (e.g. a `KafkaSinkMessage[bytes, bytes]` should be assignable to a
+# `KafkaSinkMessage[Optional[bytes], Optional[bytes]]`). mypy still
+# warns about using a covariant TypeVar as a dataclass field type
+# because the generated `__init__` parameter is contravariant, hence
+# the per-line `# type: ignore[misc]` on the field declarations.
 K_co = TypeVar("K_co", covariant=True)
-"""Type of key in Kafka message."""
+"""Covariant type of key in a Kafka sink message."""
 
 V_co = TypeVar("V_co", covariant=True)
-"""Type of value in a Kafka message."""
+"""Covariant type of value in a Kafka sink message."""
 
 K2 = TypeVar("K2")
 """Type of key in a modified Kafka message."""
@@ -270,9 +278,19 @@ class _KafkaSourcePartition(
                     )
                     raise RuntimeError(err_msg)
 
-            headers = msg.headers()
-            if headers is None:
-                headers = []
+            # confluent_kafka 2.14+ types `headers()` as the union of
+            # list-of-tuples and dict, with `Optional[Union[str, bytes]]`
+            # values. At runtime we always get the list-of-tuples form
+            # with bytes values; normalize and skip any None values.
+            raw_headers = msg.headers() or []
+            raw_items: Iterable[Tuple[str, Optional[Union[str, bytes]]]] = (
+                raw_headers.items() if isinstance(raw_headers, dict) else raw_headers
+            )
+            headers: List[Tuple[str, bytes]] = [
+                (k, v if isinstance(v, bytes) else v.encode())
+                for k, v in raw_items
+                if v is not None
+            ]
             kafka_msg = KafkaSourceMessage(
                 key=msg.key(),
                 value=msg.value(),
@@ -376,7 +394,10 @@ class KafkaSource(
 
     def list_parts(self) -> List[str]:
         """Each Kafka partition is an input partition."""
-        config = {
+        # `AdminClient` accepts heterogeneous config values (str, int,
+        # float, bool); annotate the union explicitly so adding numeric
+        # entries via `update` doesn't violate the dict's invariance.
+        config: Dict[str, Union[str, int, float, bool]] = {
             "bootstrap.servers": ",".join(self._brokers),
         }
         config.update(self._add_config)
@@ -421,8 +442,8 @@ class KafkaSource(
 class KafkaSinkMessage(Generic[K_co, V_co]):
     """Message to be written to Kafka."""
 
-    key: K_co
-    value: V_co
+    key: K_co  # type: ignore[misc]
+    value: V_co  # type: ignore[misc]
 
     topic: Optional[str] = None
     headers: List[Tuple[str, bytes]] = field(default_factory=list)

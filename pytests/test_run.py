@@ -163,10 +163,6 @@ def test_locate_dataflow_unsupported_expression_rejected(stub_module: str) -> No
 
 
 def test_locate_dataflow_module_does_not_exist_raises() -> None:
-    # The original ImportError propagates (its `.__traceback__` is
-    # non-None, which is the conditional re-raise in `_locate_dataflow`).
-    # The "Could not import" friendly-wrap branch is currently
-    # unreachable; treat as a separate cleanup task.
     with pytest.raises(ImportError, match="definitely_not_a_real_module_xyz"):
         _locate_dataflow("definitely_not_a_real_module_xyz", "flow")
 
