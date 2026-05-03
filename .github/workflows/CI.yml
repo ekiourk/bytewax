@@ -133,6 +133,16 @@ jobs:
         with:
           name: coverage-linux-x86_64
           path: coverage.xml
+      - name: Upload coverage to Codecov
+        if: ${{ matrix.target == 'x86_64' }}
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+          # Don't fail CI if the upload itself fails (e.g., transient
+          # Codecov outage). The coverage data is still preserved as a
+          # workflow artifact above.
+          fail_ci_if_error: false
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:

@@ -19,6 +19,7 @@
 <a href="https://github.com/ekiourk/bytewax/actions"><img src="https://github.com/ekiourk/bytewax/workflows/CI/badge.svg"></a>
 <a href="https://github.com/ekiourk/bytewax/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
 <a href="https://codspeed.io/ekiourk/bytewax?utm_source=badge"><img src="https://img.shields.io/endpoint?url=https://codspeed.io/badge.json" alt="CodSpeed"/></a>
+<a href="https://codecov.io/gh/ekiourk/bytewax"><img src="https://codecov.io/gh/ekiourk/bytewax/branch/main/graph/badge.svg" alt="Codecov"/></a>
 </p>
 
 
