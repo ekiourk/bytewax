@@ -4,6 +4,7 @@ from concurrent.futures import wait
 from typing import Tuple
 
 import bytewax.operators as op
+import pytest
 from bytewax.connectors.kafka import (
     KafkaSink,
     KafkaSinkMessage,
@@ -22,6 +23,13 @@ from confluent_kafka import (
 )
 from confluent_kafka.admin import AdminClient, NewTopic
 from pytest import fixture, raises
+
+# These tests rely on the `kafka_server` fixture which spins up a
+# testcontainers Kafka instance on first use. The image pull + container
+# startup + readiness can take ~60-90s on a cold machine; CI pre-pulls
+# the image, but bump the per-test timeout anyway so the first kafka
+# test in a fresh session has comfortable headroom.
+pytestmark = pytest.mark.timeout(180)
 
 
 @fixture
