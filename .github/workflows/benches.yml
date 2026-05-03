@@ -9,6 +9,10 @@ on:
   # performance analysis in order to generate initial data.
   workflow_dispatch:
 
+permissions:
+  contents: read
+  id-token: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
@@ -16,9 +20,8 @@ concurrency:
 jobs:
   benchmarks:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' || secrets.CODSPEED_TOKEN != '' }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -38,9 +41,9 @@ jobs:
           . venv/bin/activate
           just build
       - name: Run benchmarks
-        uses: CodSpeedHQ/action@v3
+        uses: CodSpeedHQ/action@v4
         with:
-          token: ${{ secrets.CODSPEED_TOKEN }}
+          mode: simulation
           run: |
             . venv/bin/activate
             WHEEL_FILE=$(ls ./dist/*.whl)

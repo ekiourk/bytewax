@@ -15,6 +15,7 @@
 <a href="https://pypi.org/project/bytewax/"><img src="https://img.shields.io/pypi/v/bytewax.svg"></a>
 <a href="https://docs.bytewax.io/stable/guide/index.html"><img src="https://img.shields.io/badge/user-guide-brightgreen"></a>
 <a href="https://github.com/bytewax/bytewax/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
+<a href="https://codspeed.io/ekiourk/bytewax?utm_source=badge"><img src="https://img.shields.io/endpoint?url=https://codspeed.io/badge.json" alt="CodSpeed"/></a>
 </p>
 
 
