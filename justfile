@@ -101,9 +101,13 @@ test-py tests=pytests: _assert-venv
 test-py-cov tests=pytests: _assert-venv
     pytest --benchmark-skip --cov --cov-report=term-missing --cov-report=html {{tests}}
 
-# Run the Python benchmarks; runs in CI
+# Run the Python benchmarks; runs in CI.
+# CodSpeed `simulation` mode runs every test under cachegrind, which slows
+# CPU-bound code by ~50–100×. Override the global 60s pytest-timeout to
+# 10 minutes per benchmark — still catches runaway loops but accommodates
+# instrumented runtime on 100k-item benchmarks.
 test-benchmark:
-    pytest --codspeed pytests/
+    pytest --codspeed --timeout=600 pytests/
 
 # Test all code in the documentation; runs in CI
 test-doc: _assert-venv
