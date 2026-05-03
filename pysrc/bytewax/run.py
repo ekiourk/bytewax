@@ -37,16 +37,16 @@ def _locate_dataflow(module_name, dataflow_name):
 
     This is adapted from Flask's codebase.
     """
-    try:
-        __import__(module_name)
-    except ImportError as ex:
-        # Reraise the ImportError if it occurred within the imported module.
-        # Determine this by checking whether the trace has a depth > 1.
-        if ex.__traceback__ is not None:
-            raise
-        else:
-            msg = f"Could not import {module_name!r}."
-            raise ImportError(msg) from None
+    # NB: a previous version of this function tried to wrap the
+    # `__import__` call in a try/except that would replace the
+    # ImportError with a friendlier "Could not import 'X'" message
+    # when only the top-level module name failed to resolve. The
+    # condition `if ex.__traceback__ is not None` it used to gate
+    # that wrap is always true on a raised exception, so the wrapping
+    # branch was unreachable and the original ImportError ("No module
+    # named 'X'") propagated regardless. Removed for clarity; the
+    # original ImportError is informative enough.
+    __import__(module_name)
 
     module = sys.modules[module_name]
 

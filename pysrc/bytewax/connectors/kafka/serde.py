@@ -41,6 +41,9 @@ class PlainAvroSerializer(Serializer):
             schema_str = schema.schema_str
         else:
             schema_str = schema
+        if schema_str is None:
+            msg = "schema must have a non-None string representation"
+            raise ValueError(msg)
         self.schema = parse_schema(json.loads(schema_str), named_schemas=named_schemas)
 
     # TODO: Re-enable once we get type hints for `confluent_kafka`.
@@ -87,6 +90,9 @@ class PlainAvroDeserializer(Deserializer):
             schema_str = schema.schema_str
         else:
             schema_str = schema
+        if schema_str is None:
+            msg = "schema must have a non-None string representation"
+            raise ValueError(msg)
         self.schema = parse_schema(json.loads(schema_str), named_schemas=named_schemas)
 
     # TODO: Re-enable once we get type hints for `confluent_kafka`.
