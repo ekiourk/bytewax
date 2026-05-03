@@ -470,6 +470,7 @@ impl<'py> FromPyObject<'py> for StatefulBatchLogic {
     }
 }
 
+#[derive(Debug)]
 enum IsComplete {
     Retain,
     Discard,
@@ -1034,5 +1035,123 @@ where
         let downstream = kv_downstream.wrap_key();
 
         Ok((downstream, snaps))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    //! Unit tests for the small pure-logic helpers in this module.
+    //!
+    //! The operator implementations themselves (`branch`, `flat_map_batch`,
+    //! `merge`, `stateful_batch`, etc.) extend Timely's `Stream` and need a
+    //! running Timely scope plus Python-wrapped values flowing through them
+    //! to exercise. Those code paths are covered by the Python integration
+    //! tests in `pytests/operators/`. Here we cover only the small helpers
+    //! that can be tested in isolation: Python ↔ Rust value extraction.
+    use super::*;
+    use pyo3::types::PyTuple;
+
+    /// Prepare a Python interpreter that can `import bytewax.errors`.
+    ///
+    /// Cargo runs tests in a Python that doesn't have bytewax installed,
+    /// but we need it for the error-path tests because `reraise_with`
+    /// resolves to a `BytewaxRuntimeError` declared in
+    /// `pysrc/bytewax/errors.py`. Prepending `pysrc/` to `sys.path` at
+    /// test time lets the lazy import succeed.
+    fn init_python_with_bytewax() {
+        pyo3::prepare_freethreaded_python();
+        Python::with_gil(|py| {
+            py.run_bound("import sys; sys.path.insert(0, 'pysrc')", None, None)
+                .expect("could not extend sys.path with pysrc/");
+        });
+    }
+
+    #[test]
+    fn is_complete_true_means_discard() {
+        init_python_with_bytewax();
+        Python::with_gil(|py| {
+            let py_true: Py<PyAny> = true.into_py(py);
+            let result = IsComplete::extract_bound(py_true.bind(py)).unwrap();
+            assert!(matches!(result, IsComplete::Discard));
+        });
+    }
+
+    #[test]
+    fn is_complete_false_means_retain() {
+        init_python_with_bytewax();
+        Python::with_gil(|py| {
+            let py_false: Py<PyAny> = false.into_py(py);
+            let result = IsComplete::extract_bound(py_false.bind(py)).unwrap();
+            assert!(matches!(result, IsComplete::Retain));
+        });
+    }
+
+    #[test]
+    fn is_complete_non_bool_returns_descriptive_error() {
+        init_python_with_bytewax();
+        Python::with_gil(|py| {
+            let py_str: Py<PyAny> = "not a bool".into_py(py);
+            let err = IsComplete::extract_bound(py_str.bind(py))
+                .expect_err("string should not be coercible to bool");
+            let msg = err.to_string();
+            assert!(
+                msg.contains("`is_complete` was not a `bool`"),
+                "error message should explain the field; got: {msg}",
+            );
+        });
+    }
+
+    #[test]
+    fn extract_ret_valid_emit_and_is_complete() {
+        init_python_with_bytewax();
+        Python::with_gil(|py| {
+            let emit_list: Py<PyAny> = vec!["a", "b", "c"].into_py(py);
+            let is_complete_obj: Py<PyAny> = false.into_py(py);
+            let tuple = PyTuple::new_bound(py, &[emit_list.bind(py), is_complete_obj.bind(py)]);
+            let (emit, is_complete) = StatefulBatchLogic::extract_ret(tuple.into_any()).unwrap();
+            assert_eq!(emit.len(), 3);
+            assert!(matches!(is_complete, IsComplete::Retain));
+        });
+    }
+
+    #[test]
+    fn extract_ret_non_tuple_input_errors() {
+        init_python_with_bytewax();
+        Python::with_gil(|py| {
+            let py_str: Py<PyAny> = "definitely not a tuple".into_py(py);
+            let result = StatefulBatchLogic::extract_ret(py_str.into_bound(py));
+            assert!(result.is_err());
+        });
+    }
+
+    #[test]
+    fn extract_ret_non_list_emit_errors_with_descriptive_message() {
+        init_python_with_bytewax();
+        Python::with_gil(|py| {
+            // A string is iterable but not a list — should fail with the
+            // explicit "was not a `list`" framing.
+            let bad_emit: Py<PyAny> = "scalar instead of list".into_py(py);
+            let is_complete_obj: Py<PyAny> = true.into_py(py);
+            let tuple = PyTuple::new_bound(py, &[bad_emit.bind(py), is_complete_obj.bind(py)]);
+            let err = StatefulBatchLogic::extract_ret(tuple.into_any())
+                .expect_err("string should not be coercible to Vec<PyObject>");
+            let msg = err.to_string();
+            assert!(
+                msg.contains("`emit` was not a `list`"),
+                "error message should mention the offending field; got: {msg}",
+            );
+        });
+    }
+
+    #[test]
+    fn extract_ret_non_bool_is_complete_errors() {
+        init_python_with_bytewax();
+        Python::with_gil(|py| {
+            let emit_list: Py<PyAny> = Vec::<&str>::new().into_py(py);
+            let bad_is_complete: Py<PyAny> = "not a bool".into_py(py);
+            let tuple = PyTuple::new_bound(py, &[emit_list.bind(py), bad_is_complete.bind(py)]);
+            let result = StatefulBatchLogic::extract_ret(tuple.into_any());
+            assert!(result.is_err());
+        });
     }
 }
