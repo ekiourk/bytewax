@@ -43,7 +43,7 @@ Create a `Dockerfile` with the following content:
 :substitutions:
 
 # Start from a debian slim with python support
-FROM python:3.11-slim-bullseye
+FROM python:3.12-slim-bookworm
 # Set up a workdir where we can put our dataflow
 WORKDIR /bytewax
 # Install bytewax and the dependencies you need here
@@ -413,6 +413,6 @@ BYTEWAX_PYTHON_FILE_PATH=examples.pagerank:flow
 
 ## Bytewax Container Images and Security
 
-Our Images are based on `python:$PYTHON_VERSION-slim-bullseye` images
+Our Images are based on `python:$PYTHON_VERSION-slim-bookworm` images
 which have a small attack surface (less than 50MB) and a very good
 scan report with zero CVE at the time of this writing.

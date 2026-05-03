@@ -1,9 +1,11 @@
 # Library Release Checklist
 
-Here is a process checklist for Bytewax employees to release a new
-version of the Python library. Contributors do not need to follow the
-steps within and instead should follow the instructions in
-<project:#contributing>.
+Release process for this fork. The fork is **not currently published
+to PyPI**; releases produce GitHub Releases with pre-built abi3 wheels
+attached as downloadable assets. PyPI publishing is on the roadmap (see
+`docs/decisions/0001-abi3-wheels.md` for the wheel-format ADR; PyPI
+Trusted Publishing will be added as its own focused workflow when we're
+ready).
 
 ## 1. One Final PR
 
@@ -31,7 +33,7 @@ Make a PR which commits the following:
 3. Labels the latest changelog entries with the version number
 
    Look in `CHANGELOG.md` for the latest batch of hand-written
-   changelog notes and add a new headings with the version number.
+   changelog notes and add a new heading with the version number.
 
    ```{code-block} diff
    :caption: CHANGELOG.md
@@ -47,114 +49,94 @@ Make a PR which commits the following:
       automatically.
    ```
 
-4. Write migration guide entry
+4. (Optional) Write migration guide entry
 
-   Add a section to `docs/user_guide/reference/migration.md` like
-
-   ````{code-block} markdown
-   :caption: docs/user_guide/reference/migration.md
-   ## From v1.2.2 to v1.2.3
-
-   ### Breaking change to `Cow` API
-
-   The `Cow` API is now named `Bear`.
-
-   If you had code that looked like this
-
-   ```python
-   from bytewax.dataflow import Cow
-
-   flow = Cow()
-   ```
-
-   It now is should be written as
-
-   ```{testcode}
-   from bytewax.dataflow import Bear
-
-   flow = Bear("flow_id")
-   ```
-   ````
-
-   Then add sub-sections for each of the breaking changes with before
-   and after example code.
-
-   You should change any `{testcode}` blocks in the previous versions
-   into `python` now that they are no valid code with this new version
-   of Bytewax.
+   For breaking changes only. Add a section to
+   `docs/guide/reference/migration.md` with before/after example code.
+   See existing entries for the format.
 
 Then check before merging:
 
 1. Confirm CI tests pass.
+2. Confirm `repo-checks` (the lint/doctest job) passed.
 
-2. Confirm that the documentation for this build renders correctly: go
-    to the list of actions at the bottom of the PR, and click on the
-    `Details` link next to the last `docs/readthedocs.org:bytewax`
-    entry.
+Approve and merge the PR.
 
-Approve and merge that PR.
+## 2. Push the release tag
 
-Check that the CI run completed for the just updated `main` branch on
-[our CI actions
-page](https://github.com/bytewax/bytewax/actions/workflows/CI.yml)
-after merging the PR.
+The CI workflow watches for tag pushes. When a tag is pushed, the
+`publish-release` job (in `.github/workflows/CI.yml`) downloads the
+built wheels and attaches them to a new GitHub Release.
 
-## 3. Create Release on GitHub
+**Tag conventions:**
 
-Go to the [create a new GitHub release page for our
-repo](https://github.com/bytewax/bytewax/releases).
+- `vX.Y.Z` (e.g. `v1.2.3`) → published as a **full release**
+- Anything else (e.g. `dev-2026-05-03`, `rc-1`, `alpha-2`) → published
+  as a **prerelease**
 
-1. Choose a tag and enter a tag with the new version number `v1.2.3`.
+Push the tag from your local clone after the release PR has merged:
 
-2. Click "Auto-generate release notes".
+```console
+$ git checkout main
+$ git pull origin main
+$ git tag v1.2.3
+$ git push origin v1.2.3
+```
 
-   This will pre-populate the GitHub release notes with a list of
-   changes via PRs.
+CI will then:
 
-3. Copy and paste any hand-written notes from the section of
-   [`CHANGELOG.md`](https://raw.githubusercontent.com/bytewax/bytewax/main/CHANGELOG.md)
-   with this version into a new section of the GitHub release
-   description at the top.
+1. Build all wheels (one abi3 wheel per platform/arch — 6 total: 3
+   Linux + 2 macOS + 1 Windows).
+2. Run the test suite on each.
+3. Run the abi3 cross-version smoke tests.
+4. Create a GitHub Release named after the tag.
+5. Attach all 6 wheels to the release as downloadable assets.
+
+Total runtime is ~15 minutes for the full matrix.
+
+## 3. Verify the release
+
+After CI completes:
+
+1. Visit <https://github.com/ekiourk/bytewax/releases>.
+2. Confirm the new release exists with all 6 wheels attached.
+3. GitHub will have auto-generated release notes from the merged PRs.
+   Edit the release description and prepend the hand-written
+   `CHANGELOG.md` notes for this version.
 
    ```{code-block} diff
    :caption: GitHub Release Notes Form
    +## Overview
-   +* Paste in the stuff in `CHANGELOG.md` here.
+   +* Paste in the stuff from `CHANGELOG.md` here.
    +
     ## What's Changed
     * List of PRs that were merged, but sometimes the names aren't helpful.
    ```
 
-4. Wait until the CI run above for the `main` branch completes. The
-   next CD step needs the wheel packages that are built during CI. It
-   looks like this usually takes ~20 min.
+4. Hit "Update release."
 
-5. *Press "Publish release"!*
+Users can then install a specific version directly from the release
+URL:
 
-   This should create a tag in our repo named `v1.2.3` and CD will
-   kick off, pushing the final package to PyPI.
+```console
+$ pip install https://github.com/ekiourk/bytewax/releases/download/v1.2.3/bytewax-1.2.3-cp310-abi3-manylinux_2_28_x86_64.whl
+```
 
-   Check that the CD run completed on [our CD actions
-   page](https://github.com/bytewax/bytewax/actions/workflows/CD.yml).
+(Adjust the wheel filename to match the user's platform.)
 
-## 3. Double check PyPI
+## 4. Future: PyPI publishing
 
-Double check our [Bytewax PyPI
-page](https://pypi.org/project/bytewax/) to make sure that the new
-version of the package is there.
+When PyPI publishing is set up, this section will document the
+GitHub-native flow via [Trusted Publishing](https://docs.pypi.org/trusted-publishers/):
 
-## 4. Double check ReadTheDocs
+- A separate workflow (`.github/workflows/publish-pypi.yml`) will
+  trigger on `release.published` events.
+- It uses `pypa/gh-action-pypi-publish` with OIDC — no PyPI tokens
+  stored in GitHub.
+- The PyPI project name will likely **not** be `bytewax` (that's
+  owned by the original Bytewax company). A fork-specific name like
+  `bytewax-community` or similar will be chosen at the time of
+  publication.
 
-We host our docs at <https://docs.bytewax.io> which are hosted by
-[Read The Docs](https://docs.readthedocs.io/en/stable/index.html). The
-RTD project should automatically detect that a new tag was created and
-build the documentation from that tag, through the [automation rules
-setup here](https://readthedocs.org/dashboard/bytewax/rules/).
-
-Double check that the build for this new version completed at the
-[builds page for our
-project](https://readthedocs.org/projects/bytewax/builds/). Then go to
-our [live production docs](https://docs.bytewax.io) and ensure that
-the new release docs are being shown for the `stable` version.
-
-I think we're done! Update this if we're not!
+Until then, GitHub Releases are the canonical distribution channel for
+this fork.

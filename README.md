@@ -1,5 +1,10 @@
 # Bytewax: Python Stateful Stream Processing Framework
 
+> Forked from [bytewax/bytewax](https://github.com/bytewax/bytewax).
+> This fork tracks ongoing maintenance (Python 3.13, abi3 wheels,
+> dependency modernization). Not affiliated with Bytewax the company.
+> Not currently published to PyPI.
+
 <div align='center'>
  <a href="https://bytewax.io/">
 <picture>
@@ -11,10 +16,8 @@
 </div>
 
 <p align='center'>
-<a href="https://github.com/bytewax/bytewax/actions"><img src="https://github.com/bytewax/bytewax/workflows/CI/badge.svg"></a>
-<a href="https://pypi.org/project/bytewax/"><img src="https://img.shields.io/pypi/v/bytewax.svg"></a>
-<a href="https://docs.bytewax.io/stable/guide/index.html"><img src="https://img.shields.io/badge/user-guide-brightgreen"></a>
-<a href="https://github.com/bytewax/bytewax/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
+<a href="https://github.com/ekiourk/bytewax/actions"><img src="https://github.com/ekiourk/bytewax/workflows/CI/badge.svg"></a>
+<a href="https://github.com/ekiourk/bytewax/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
 <a href="https://codspeed.io/ekiourk/bytewax?utm_source=badge"><img src="https://img.shields.io/endpoint?url=https://codspeed.io/badge.json" alt="CodSpeed"/></a>
 </p>
 
@@ -194,11 +197,11 @@ Our commerically licensed Platform
 
 Join us on [Slack](https://join.slack.com/t/bytewaxcommunity/shared_invite/zt-vkos2f6r-_SeT9pF2~n9ArOaeI3ND2w) for support and discussion.
 
-Open issues on [GitHub Issues](https://github.com/bytewax/bytewax/issues) for bug reports and feature requests. (For general help, use Slack.)
+Open issues on [GitHub Issues](https://github.com/ekiourk/bytewax/issues) for bug reports and feature requests against this fork. (For general help, use Slack.)
 
 **Contributions Welcome:**
 - Check out the [Contribution Guide](https://docs.bytewax.io/stable/guide/contributing/contributing.html) to learn how to get started.
-- We follow a [Code of Conduct](https://github.com/bytewax/bytewax/blob/main/CODE_OF_CONDUCT.md).
+- We follow a [Code of Conduct](./CODE_OF_CONDUCT.md).
 
 ---
 
