@@ -264,24 +264,22 @@ jobs:
           print(f"abi3 smoke ok on python {sys.version_info[:2]}")
           PY
 
-  upload:
-    name: Store wheels in S3
+  publish-release:
+    name: Attach wheels to a GitHub release
     runs-on: ubuntu-22.04
-    if: "github.ref == 'refs/heads/main'"
+    # Fires on tag pushes. Tag `v*` (e.g. `v0.21.2`) → full release;
+    # any other tag (e.g. `dev-2026-05-03`, `rc-1`) → prerelease.
+    if: startsWith(github.ref, 'refs/tags/')
     needs: [ linux, macos, windows ]
+    permissions:
+      contents: write
     steps:
       - uses: actions/download-artifact@v4
         with:
           pattern: wheels-*-*
           path: wheels
           merge-multiple: true
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: softprops/action-gh-release@v2
         with:
-          aws-access-key-id: ${{ secrets.ECR_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.ECR_SECRET_KEY }}
-          aws-region: us-west-2
-      - name: Upload files to S3 with AWS CLI
-        run: |
-          aws s3 sync ./wheels s3://${{ secrets.WHEELS_S3_BUCKET }}/${{ github.sha }} --delete
-          aws s3 ls s3://${{ secrets.WHEELS_S3_BUCKET }}/${{ github.sha }}
+          files: wheels/*.whl
+          prerelease: ${{ !startsWith(github.ref_name, 'v') }}
