@@ -1,5 +1,9 @@
 [toolchain]
-channel = "1.74.1"
-components = [ "rustfmt", "clippy" ]
+# Bumped from 1.74.1 (Dec 2023). 1.87 is the minimum that the current
+# `cargo-llvm-cov` (used for Rust coverage measurement) supports.
+# `llvm-tools-preview` is needed by cargo-llvm-cov to instrument the
+# build for line-level coverage.
+channel = "1.87"
+components = [ "rustfmt", "clippy", "llvm-tools-preview" ]
 # FYI, if you're going to use rust-analyzer, you'll have to install it
 # manually using `rustup component add rust-analyzer`.

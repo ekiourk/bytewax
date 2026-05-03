@@ -80,11 +80,26 @@ lint-pc: _assert-venv
 test-rs:
     cargo test --no-default-features
 
+# Run the Rust tests with line-level coverage via cargo-llvm-cov.
+# NOTE: this only measures code reached by Rust-side unit tests.
+# Most of the Rust code in this crate is exercised through Python
+# (via pyo3), and that path isn't captured here. See
+# `docs/decisions/0001-abi3-wheels.md` for the broader test-coverage
+# discussion.
+test-rs-cov:
+    cargo llvm-cov --no-default-features --html
+    @echo "HTML report: target/llvm-cov/html/index.html"
+
 pytests := 'pytests/'
 
 # Run the Python tests; runs in CI
 test-py tests=pytests: _assert-venv
     pytest --benchmark-skip {{tests}}
+
+# Run the Python tests with coverage; produces a terminal summary and
+# an HTML report at htmlcov/index.html
+test-py-cov tests=pytests: _assert-venv
+    pytest --benchmark-skip --cov --cov-report=term-missing --cov-report=html {{tests}}
 
 # Run the Python benchmarks; runs in CI
 test-benchmark:
